@@ -22,11 +22,7 @@ public class Assets {
 	static void get(AssetManager asset) {
 		asset.getAll();
 		PLANET_CONTEXT = VertContext.of(PLANET_SHADER, 
-			new VertexAttribute(Usage.Position, 3, "a_position"),
-			new VertexAttribute(Usage.ColorPacked, 4, "a_color"),
-			new VertexAttribute(Usage.Normal, 3, "a_normal"),
-			new VertexAttribute(Usage.Generic, 1, "a_shininess"),
-			new VertexAttribute(Usage.Generic, 1, "a_specular")
+			new VertexAttribute(Usage.Position, 3, "a_position")
 		);
 	}
 }

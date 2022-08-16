@@ -27,6 +27,7 @@ public class Main extends Base {
 		Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
 		Gdx.gl.glCullFace(GL20.GL_BACK);
 		Gdx.gl.glEnable(GL20.GL_CULL_FACE);
+		Gdx.gl.glClearColor(0.02f, 0.02f, 0.05f, 1);
 		//api.glPolygonMode(GL20.GL_FRONT_AND_BACK, false);
 	}
 

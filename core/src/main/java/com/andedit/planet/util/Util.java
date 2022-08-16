@@ -6,8 +6,12 @@ import java.util.function.Consumer;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Cubemap;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FacedCubemapData;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -102,6 +106,12 @@ public final class Util {
 		TextureRegion var = new TextureRegion(region);
 		var.flip(x, y);
 		return var;
+	}
+	
+	public static Pixmap getPixmap(Cubemap map, CubemapSide side) {
+		var data = ((FacedCubemapData)map.getCubemapData()).getTextureData(side);
+		if (!data.isPrepared()) data.prepare();
+		return data.consumePixmap();
 	}
 
 	/** Create a new change listener using java 8 lambda. */

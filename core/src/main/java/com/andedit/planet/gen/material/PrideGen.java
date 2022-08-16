@@ -17,7 +17,7 @@ public class PrideGen implements MaterialGen {
 	}
 
 	@Override
-	public Vector3 getInfo(Vector3 pos, Vector3 original) {
+	public Color getColor(Vector3 pos, Vector3 original) {
 		/*
 		float y = ((pos.y * 0.55f) + 0.5f) * flag.size();
 		y += color.get(pos.x*COL_SCL, pos.y*COL_SCL, pos.z*COL_SCL) * 0.8;
@@ -27,7 +27,7 @@ public class PrideGen implements MaterialGen {
 		float y = (float)(color.get(pos.x*COL_SCL, pos.y*COL_SCL, pos.z*COL_SCL) * flag.size());
 		int i = MathUtils.clamp(MathUtils.floor((y/1.5f)+2f), 0, flag.size()-1);
 		
-		return INFO.set(flag.get(i).toFloatBits(), 3f, 0.2f);
+		return COLOR.set(flag.get(i));
 	}
 	
 	public static enum Flag {

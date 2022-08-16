@@ -16,12 +16,12 @@ public class Statics {
 		VERTEX_SIZE = Assets.PLANET_CONTEXT.getAttrs().vertexSize;
 	}
 	
-	public static ByteBuffer buffer(int vertSize) {
+	public static ByteBuffer buffer(int indexSize) {
 		if (BUFFER != null) {
 			return BUFFER;
 		}
 		
-		return BUFFER = BufferUtils.newByteBuffer(VERTEX_SIZE * vertSize);
+		return BUFFER = BufferUtils.newByteBuffer(indexSize * Integer.BYTES);
 	}
 	
 	public static ByteBuffer buffer() {
