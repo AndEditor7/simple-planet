@@ -72,6 +72,11 @@ public final class Util {
 		return MathUtils.clamp(mod < 0f ? mod + 360f : mod, 0f, 360f);
 	}
 	
+	/** Linearly interpolates between fromValue to toValue on progress position. */
+	public static double lerp (double fromValue, double toValue, double progress) {
+		return fromValue + (toValue - fromValue) * progress;
+	}
+	
 	public static float packNorm(float x, float y, float z) {
 		final float a = 0.5f;
 		return Color.toFloatBits((x*a)+a, (y*a)+a, (z*a)+a, 1f);

@@ -23,7 +23,7 @@ void main()
     vec3 reflectDir = reflect(-u_lightDir, normal);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_shininess) * v_specular;
 	
-	float amb = 0.4;
+	float amb = 0.5;
     float light = mix(dot(normal, u_lightDir), 1.0, amb);
     if (light < amb) {
     	light = mix(amb, light, amb);

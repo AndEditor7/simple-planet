@@ -123,13 +123,6 @@ public class IcoSphereGen {
 			faces = faces2;
 		}
 
-		/* // done, now add triangles to mesh
-		for (var tri : faces) {
-			geometry.triangleIndices.add(tri.x);
-			geometry.triangleIndices.add(tri.y);
-			geometry.triangleIndices.add(tri.z);
-		} */
-
 		return faces;
 	}
 }

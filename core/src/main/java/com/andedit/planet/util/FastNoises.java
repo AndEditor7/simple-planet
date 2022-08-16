@@ -2,19 +2,19 @@ package com.andedit.planet.util;
 
 import java.util.Random;
 
-public class FastNoiseOctaves {
+public class FastNoises {
 	private final int[] seeds;
 	private float gain = 0.5f;
 	
-	public FastNoiseOctaves(int count) {
+	public FastNoises(int count) {
 		this(count, new Random());
 	}
 	
-	public FastNoiseOctaves(int count, long seed) {
+	public FastNoises(int count, long seed) {
 		this(count, new Random(seed));
 	}
 
-	public FastNoiseOctaves(int count, Random rng) {
+	public FastNoises(int count, Random rng) {
 		seeds = new int[count];
 
 		for (int i = 0; i < count; i++) {
@@ -22,7 +22,7 @@ public class FastNoiseOctaves {
 		}
 	}
 	
-	public FastNoiseOctaves setGain(float gain) {
+	public FastNoises setGain(float gain) {
 		this.gain = gain;
 		return this;
 	}
