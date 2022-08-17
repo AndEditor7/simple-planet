@@ -18,11 +18,9 @@ public class PrideGen implements MaterialGen {
 
 	@Override
 	public Color getColor(Vector3 pos, Vector3 original) {
-		/*
-		float y = ((pos.y * 0.55f) + 0.5f) * flag.size();
-		y += color.get(pos.x*COL_SCL, pos.y*COL_SCL, pos.z*COL_SCL) * 0.8;
-		int i = MathUtils.clamp(MathUtils.floor(y), 0, flag.size()-1);
-		*/
+		//float y = ((pos.y * 0.55f) + 0.5f) * flag.size();
+		//y += color.get(pos.x*COL_SCL, pos.y*COL_SCL, pos.z*COL_SCL) * 0.8;
+		//int i = MathUtils.clamp(MathUtils.floor(y), 0, flag.size()-1);
 		
 		float y = (float)(color.get(pos.x*COL_SCL, pos.y*COL_SCL, pos.z*COL_SCL) * flag.size());
 		int i = MathUtils.clamp(MathUtils.floor((y/1.5f)+2f), 0, flag.size()-1);

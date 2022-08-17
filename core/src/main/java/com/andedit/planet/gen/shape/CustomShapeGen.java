@@ -19,23 +19,24 @@ public class CustomShapeGen implements ShapeGen {
 	{
 		var noise = new NormalNoise();
 		noise.setSeed(random.nextInt());
-		noise.setFractalOctaves(4);
-		noise.setFrequency(2f);
+		noise.setFractalOctaves(7); // 9
+		noise.setFrequency(1.7f);
 		noise.setNoiseType(Noise.SIMPLEX_FRACTAL);
 		noise.setFractalType(Noise.FBM);
-		amp = 0.2f;
+		noise.setFractalGain(0.48f);
+		amp = 0.075f;
 		filters.add(noise);
 	}
 
 	@Override
 	public void apply(Vector3 point) {
-		float value = 0;
-		for (var noise : filters) {
-			value += noise.evaluate(point);
-		}
-		float h = 0.1f;
+		float value = filters.get(0).evaluate(point);
+		//for (var noise : filters) {
+			//value += noise.evaluate(point);
+		//}
+		float h = 0.08f;
 		if (value < h) {
-			value = MathUtils.lerp(value, h, 0.7f);
+			value = MathUtils.lerp(value, h, 0.5f);
 		}
 		point.scl(value * amp + 1f);
 	}

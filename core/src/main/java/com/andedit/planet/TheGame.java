@@ -7,6 +7,7 @@ import com.andedit.planet.gen.shape.CustomShapeGen;
 import com.andedit.planet.gen.shape.SimpleShapeGen;
 import com.andedit.planet.input.control.Control;
 import com.andedit.planet.input.control.DesktopControl;
+import com.andedit.planet.trans.RotationTrans;
 import com.andedit.planet.util.Camera;
 import com.andedit.planet.util.Inputs;
 import com.andedit.planet.util.Util;
@@ -29,6 +30,7 @@ public class TheGame extends ScreenAdapter {
 		planet = new Planet();
 		planet.setShapeGen(new CustomShapeGen());
 		planet.setMaterialGen(new PrideGen());
+		planet.setTrans(new RotationTrans());
 		planet.calulate();
 		camera = new Camera();
 		control = new DesktopControl();
@@ -39,6 +41,7 @@ public class TheGame extends ScreenAdapter {
 		//camera.fieldOfView = 60;
 		camera.viewportWidth = Util.getW();
 		camera.viewportHeight = Util.getH();
+		camera.position.set(0, 0, 3.4f);
 	}
 	
 	@Override
@@ -68,10 +71,9 @@ public class TheGame extends ScreenAdapter {
 		float scl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) ? 2 : 1;
 		scl *= delta * 0.4f;
 		Vector2 move = control.getMove().rotateDeg(-camera.yaw).scl(2f);
-		camera.translate(move.x * scl, control.getMoveY()  * scl, move.y * scl);
-		camera.updateRotation();
+		//camera.translate(move.x * scl, control.getMoveY()  * scl, move.y * scl);
+		//camera.updateRotation();
 		control.clear();
-		camera.fieldOfView = 60;
 	}
 	
 	@Override
@@ -93,6 +95,7 @@ public class TheGame extends ScreenAdapter {
 		if (calc)
 		planet.calulate();
 		camera.update(false);
+		planet.update(delta);
 		planet.render(camera);
 	}
 	
