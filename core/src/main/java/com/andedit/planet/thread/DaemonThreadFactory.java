@@ -9,7 +9,7 @@ public class DaemonThreadFactory implements ThreadFactory  {
 	
 	public DaemonThreadFactory(String name) {
 		this.name = name;
-		num = new AtomicInteger();
+		num = new AtomicInteger(1);
 	}
 	
 	@Override

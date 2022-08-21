@@ -11,10 +11,10 @@ public class PrideMaterialGen implements MaterialGen {
 	public NormalNoise color = new NormalNoise();
 	
 	{
-		color.setFractalOctaves(2);
+		color.setFractalOctaves(3);
 		color.setFractalGain(0.6f);
 		color.setFrequency(2);
-		color.amb = 0.7f;
+		color.amb = 1.0f; // 0.7
 	}
 
 	@Override

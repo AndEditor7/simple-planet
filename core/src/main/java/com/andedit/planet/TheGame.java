@@ -78,7 +78,8 @@ public class TheGame extends ScreenAdapter {
 	private void refreah() {
 		//var gen = new EarthGen();
 		planet.setShapeGen(new SimpleShapeGen());
-		planet.setMaterialGen(new ColorMaterial(Color.WHITE));
+		//planet.setMaterialGen(new ColorMaterial(Color.WHITE));
+		planet.setMaterialGen(new PrideMaterialGen());
 		planet.calulate();
 	}
 	

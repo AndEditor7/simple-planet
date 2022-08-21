@@ -37,7 +37,7 @@ import com.badlogic.gdx.utils.Disposable;
 public class Planet implements Disposable {
 	
 	public static final int LEVEL = 6; // 5 or 6
-	public static final int RES = 1024 * 2; // 512
+	public static final int RES = 1024 / 2; // 512
 	public static final int SIZE;
 	public static final List<Vector3> POSITIONS;
 	
