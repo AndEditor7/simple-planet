@@ -14,8 +14,12 @@ public interface VertContext
 	VertexAttributes getAttrs();
 	
 	default void setVertexAttributes(@Null Buffer buffer) {
-		final VertexAttributes attributes = getAttrs();
-		final ShaderProgram shader = getShader();
+		setVertexAttributes(buffer, getShader());
+	}
+	
+	default void setVertexAttributes(@Null Buffer buffer, @Null ShaderProgram shader) {
+		final var attributes = getAttrs();
+		shader = shader == null ? getShader() : shader;
 		for (int i = 0; i < attributes.size(); i++) {
 			final VertexAttribute attribute = attributes.get(i);
 			final int location = shader.getAttributeLocation(attribute.alias);
@@ -34,8 +38,12 @@ public interface VertContext
 	}
 	
 	default void unVertexAttributes() {
-		final VertexAttributes attributes = getAttrs();
-		final ShaderProgram shader = getShader();
+		unVertexAttributes(getShader());
+	}
+	
+	default void unVertexAttributes(@Null ShaderProgram shader) {
+		final var attributes = getAttrs();
+		shader = shader == null ? getShader() : shader;
 		for (int i = 0; i < attributes.size(); i++) {
 			shader.disableVertexAttribute(attributes.get(i).alias);
 		}

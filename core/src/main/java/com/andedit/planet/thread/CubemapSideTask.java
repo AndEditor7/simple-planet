@@ -3,8 +3,10 @@ package com.andedit.planet.thread;
 import com.andedit.planet.gen.material.MaterialGen;
 import com.andedit.planet.gen.shape.ShapeGen;
 import com.andedit.planet.world.Planet;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Null;
 import com.badlogic.gdx.graphics.Pixmap;
 
 public class CubemapSideTask implements Runnable {
@@ -15,13 +17,17 @@ public class CubemapSideTask implements Runnable {
 	private final Pixmap colourMap, normalMap;
 	private final CubemapSide side;
 	private final Vector3 rite;
+	private final Object lock;
+	private final Runnable postRun;
 	
-	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side) {
+	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side, Object lock, @Null Runnable postRun) {
 		this.shape = shape;
 		this.material = material;
 		this.colourMap = colourMap;
 		this.normalMap = normalMap;
 		this.side = side;
+		this.lock = lock;
+		this.postRun = postRun;
 		rite = new Vector3(side.direction).crs(side.up);
 	}
 
@@ -47,7 +53,8 @@ public class CubemapSideTask implements Runnable {
 		
 		var dir = side.direction;
 		
-		for (int x = 0; x < Planet.RES; x++) {
+		synchronized (lock) {
+			for (int x = 0; x < Planet.RES; x++)
 			for (int y = 0; y < Planet.RES; y++) {
 				calcPosU(uPos, x);
 				calcPosV(vPos, y);
@@ -82,6 +89,10 @@ public class CubemapSideTask implements Runnable {
 				normalMap.setColor((pos.x/2f)+0.5f, (pos.y/2f)+0.5f, (pos.z/2f)+0.5f, 1);
 				normalMap.drawPixel(x, y);
 			}
+		}
+		
+		if (postRun != null) {
+			Gdx.app.postRunnable(postRun);
 		}
 	}
 	

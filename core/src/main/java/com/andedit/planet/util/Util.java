@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cubemap;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FacedCubemapData;
@@ -109,9 +110,16 @@ public final class Util {
 	}
 	
 	public static Pixmap getPixmap(Cubemap map, CubemapSide side) {
-		var data = ((FacedCubemapData)map.getCubemapData()).getTextureData(side);
+		return getPixmap(getTexData(map, side));
+	}
+	
+	public static Pixmap getPixmap(TextureData data) {
 		if (!data.isPrepared()) data.prepare();
 		return data.consumePixmap();
+	}
+	
+	public static TextureData getTexData(Cubemap map, CubemapSide side) {
+		return ((FacedCubemapData)map.getCubemapData()).getTextureData(side);
 	}
 
 	/** Create a new change listener using java 8 lambda. */

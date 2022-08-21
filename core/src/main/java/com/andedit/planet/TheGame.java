@@ -2,7 +2,9 @@ package com.andedit.planet;
 
 import static com.andedit.planet.Main.main;
 
-import com.andedit.planet.gen.material.PrideGen;
+import com.andedit.planet.gen.EarthGen;
+import com.andedit.planet.gen.material.ColorMaterial;
+import com.andedit.planet.gen.material.PrideMaterialGen;
 import com.andedit.planet.gen.shape.CustomShapeGen;
 import com.andedit.planet.gen.shape.SimpleShapeGen;
 import com.andedit.planet.input.control.Control;
@@ -15,6 +17,7 @@ import com.andedit.planet.world.Planet;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
@@ -28,10 +31,8 @@ public class TheGame extends ScreenAdapter {
 	
 	public TheGame() {
 		planet = new Planet();
-		planet.setShapeGen(new CustomShapeGen());
-		planet.setMaterialGen(new PrideGen());
 		planet.setTrans(new RotationTrans());
-		planet.calulate();
+		refreah();
 		camera = new Camera();
 		control = new DesktopControl();
 		
@@ -49,8 +50,6 @@ public class TheGame extends ScreenAdapter {
 		main.inputs.addProcessor(control.getInput());
 		main.setCatched(true);
 	}
-	
-	private boolean calc = false;
 	
 	private void rot(float delta) {
 		angle += delta * 15f;
@@ -76,24 +75,23 @@ public class TheGame extends ScreenAdapter {
 		control.clear();
 	}
 	
+	private void refreah() {
+		//var gen = new EarthGen();
+		planet.setShapeGen(new SimpleShapeGen());
+		planet.setMaterialGen(new ColorMaterial(Color.WHITE));
+		planet.calulate();
+	}
+	
 	@Override
 	public void render(float delta) {
 		mov(delta);
 		
-		if (Inputs.isKeyJustPressed(Keys.F1)) {
-			calc = !calc;
-		}
-		
 		if (Inputs.isKeyJustPressed(Keys.F4)) {
-			planet.setShapeGen(new CustomShapeGen());
-			planet.setMaterialGen(new PrideGen());
-			planet.calulate();
+			refreah();
 		}
 		
 		Gdx.gl.glLineWidth(1);
 		Util.glClear();
-		if (calc)
-		planet.calulate();
 		camera.update(false);
 		planet.update(delta);
 		planet.render(camera);

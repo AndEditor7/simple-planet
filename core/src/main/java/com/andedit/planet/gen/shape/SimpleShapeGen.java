@@ -1,28 +1,54 @@
 package com.andedit.planet.gen.shape;
 
-import com.andedit.planet.util.SimplexNoises;
-import com.andedit.planet.util.Util;
+import com.andedit.planet.gen.MultiNoise;
+import com.andedit.planet.gen.NormalNoise;
+import com.andedit.planet.util.Operator;
 import com.badlogic.gdx.math.Vector3;
 
-public class SimpleShapeGen implements ShapeGen {
-	
-	private static final double SCL = 1.8;
+import make.some.noise.Noise;
 
-	public SimplexNoises map = new SimplexNoises(5);
+public class SimpleShapeGen implements ShapeGen {
+
+	public final MultiNoise noises;
 	
 	{
-		map.setGain(0.55);
+		noises = new MultiNoise();
+		noises.amb = 0.1f;
+		
+		NormalNoise normal = new NormalNoise();
+		normal.setNoiseType(Noise.HONEY_FRACTAL);
+		normal.setFractalType(Noise.RIDGED_MULTI);
+		normal.setFractalOctaves(6); // 4
+		normal.setFractalGain(0.5f);
+		normal.setFrequency(2);
+		normal.amb = 1.5f;
+		noises.add(normal, Operator.ADD);
+		
+		
+		normal = new NormalNoise();
+		normal.setNoiseType(Noise.SIMPLEX_FRACTAL);
+		normal.setFractalType(Noise.FBM);
+		normal.setFractalOctaves(2);
+		normal.setFractalGain(0.5f);
+		normal.setFrequency(1.5f);
+		normal.amb = 1;
+		noises.add(normal, (a, b) -> {
+			return a * Math.max(0.2f, b) ;
+		});
+		
+		normal = new NormalNoise();
+		normal.setNoiseType(Noise.SIMPLEX_FRACTAL);
+		normal.setFractalType(Noise.FBM);
+		normal.setFractalOctaves(7); // 5
+		normal.setFractalGain(0.55f);
+		normal.setFrequency(3.5f);
+		normal.amb = 0.2f;
+		noises.add(normal, Operator.ADD);
 	}
 	
 	@Override
 	public void apply(Vector3 point) {
-		var val = map.get(point.x*SCL, point.y*SCL, point.z*SCL);
-		if (val < 0.1) {
-			val = Util.lerp(val, 0, 0.7);
-		}
-		val *= 0.06;
-		val += 1.0;
-		point.scl((float)val);
+		point.scl(noises.evaluate(point)+1f);
 	}
 
 }

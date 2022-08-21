@@ -10,6 +10,8 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Collections;
 
+import make.some.noise.Noise;
+
 public class Main extends Base {
 	public static API api;
 	public static final Main main = new Main();
@@ -18,6 +20,7 @@ public class Main extends Base {
 
 	@Override
 	public void create() {
+		Noise.instance.getSimplex(0, 0, 0);
 		Collections.allocateIterators = true;
 		stage = new Stage();
 		Gdx.input.setInputProcessor(new InputMultiplexer(stage, inputs, Inputs.input));

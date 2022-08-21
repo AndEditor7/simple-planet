@@ -1,31 +1,25 @@
 package com.andedit.planet;
 
-import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import com.andedit.planet.thread.DaemonThreadFactory;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.IntArray;
 
 public class Statics {
 	
-	private static ByteBuffer BUFFER;
-	private static int VERTEX_SIZE;
 	private static IntArray BUFFERS = new IntArray();
 	
+	public static ExecutorService PLANET_EXECUTOR;
+	
 	static void init() {
-		VERTEX_SIZE = Assets.PLANET_CONTEXT.getAttrs().vertexSize;
-	}
-	
-	public static ByteBuffer buffer(int indexSize) {
-		if (BUFFER != null) {
-			return BUFFER;
-		}
-		
-		return BUFFER = BufferUtils.newByteBuffer(indexSize * Integer.BYTES);
-	}
-	
-	public static ByteBuffer buffer() {
-		return BUFFER;
+		int threads = Runtime.getRuntime().availableProcessors();
+		threads = MathUtils.clamp(MathUtils.roundPositive(threads / 1.5f), 1, 7);
+		PLANET_EXECUTOR = Executors.newFixedThreadPool(threads, new DaemonThreadFactory("PlanetGen"));
 	}
 	
 	public static void putBuffer(int buffer) {
@@ -41,6 +35,12 @@ public class Statics {
 			buffer.flip();
 			Gdx.gl.glDeleteBuffers(buffer.remaining(), buffer);
 			BUFFERS.clear();
+		}
+		
+		PLANET_EXECUTOR.shutdown();
+		try {
+			PLANET_EXECUTOR.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
 		}
 	}
 }

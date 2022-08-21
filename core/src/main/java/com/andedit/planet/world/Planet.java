@@ -2,15 +2,19 @@ package com.andedit.planet.world;
 
 import static com.badlogic.gdx.Gdx.gl;
 
-import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.andedit.planet.Assets;
 import com.andedit.planet.Statics;
 import com.andedit.planet.gen.material.MaterialGen;
 import com.andedit.planet.gen.shape.ShapeGen;
+import com.andedit.planet.graphic.SideTextureData;
 import com.andedit.planet.thread.CubemapSideTask;
+import com.andedit.planet.thread.ShapeGenTask;
 import com.andedit.planet.trans.Trans;
 import com.andedit.planet.util.IcoSphereGen;
 import com.andedit.planet.util.TexBinder;
@@ -22,23 +26,23 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
-import com.badlogic.gdx.graphics.glutils.PixmapTextureData;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.GridPoint3;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.Disposable;
 
 public class Planet implements Disposable {
 	
-	public static final int LEVEL = 5; // 6 or 7
-	public static final int RES = 512;
+	public static final int LEVEL = 6; // 5 or 6
+	public static final int RES = 1024 * 2; // 512
+	public static final int SIZE;
+	public static final List<Vector3> POSITIONS;
 	
-	private static final List<Vector3> POSITIONS;
 	private static final List<GridPoint3> INDICES;
-	private static final ByteBuffer BUFFER;
 	private static final int IDXBUF, IDXSIZE;
-	private static final int SIZE;
 	private static final TexBinder COLOR_BIND = new TexBinder();
 	private static final TexBinder NORMAL_BIND = new TexBinder();
 	
@@ -47,7 +51,11 @@ public class Planet implements Disposable {
 	private final Cubemap colorMap;
 	private final Cubemap normalMap;
 	private final ArrayList<Pixmap> pixmaps;
+	private final Object[] locks;
 	private final int vertBuf;
+	private final ExecutorService executor;
+	private final ArrayList<Future<?>> futures;
+	private final FloatBuffer buffer;
 	
 	private ShapeGen shape;
 	private MaterialGen material;
@@ -55,23 +63,37 @@ public class Planet implements Disposable {
 	
 	private final Matrix4 posMat;
 	private final Matrix3 norMat;
+	private boolean notCalulated = true;
+	private boolean isDisposed;
 	
 	public Planet() {
+		buffer = BufferUtils.newFloatBuffer(SIZE * 3);
+		System.out.println("floats: " + buffer.capacity());
+		
+		locks = new Object[6];
+		for (int i = 0; i < locks.length; i++) {
+			locks[i] = new Object();
+		}
+		
 		pixmaps = new ArrayList<>(12);
 		vertBuf = gl.glGenBuffer();
 		
 		colorMap  = newCubemap(Format.RGB888);
 		COLOR_BIND.bind(colorMap);
 		colorMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
+		colorMap.unsafeSetAnisotropicFilter(8);
 		
 		normalMap = newCubemap(Format.RGB888);
 		NORMAL_BIND.bind(normalMap);
 		normalMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
+		normalMap.unsafeSetAnisotropicFilter(8);
 		
 		TexBinder.deactive();
 		
 		posMat = new Matrix4();
 		norMat = new Matrix3();
+		executor = Statics.PLANET_EXECUTOR;
+		futures = new ArrayList<>();
 	}
 	
 	public void setShapeGen(ShapeGen shape) {
@@ -87,36 +109,36 @@ public class Planet implements Disposable {
 	}
 	
 	public void calulate() {
-		shape.start(false);
-		var pos = new Vector3();
-		var buf = BUFFER.asFloatBuffer();
-		for (int i = 0; i < SIZE; i++) {
-			shape.apply(pos.set(POSITIONS.get(i)));
-			buf.put(pos.x);
-			buf.put(pos.y);
-			buf.put(pos.z);
-		}
-		buf.flip();
+		if (!futures.isEmpty()) return;
 		
-		gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, vertBuf);
-		gl.glBufferData(GL20.GL_ARRAY_BUFFER, buf.remaining() * Float.BYTES, buf, GL20.GL_STREAM_DRAW);
-		gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
+		submit(new ShapeGenTask(buffer, shape, () -> {
+			if (isDisposed) return;
+			synchronized (buffer) {
+				gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, vertBuf);
+				gl.glBufferData(GL20.GL_ARRAY_BUFFER, buffer.remaining() * Float.BYTES, buffer, GL20.GL_STREAM_DRAW);
+				gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
+			}
+		}));
 		
-		shape.start(true);
-		material.start();
 		for (var side : CubemapSide.values()) {
-			var colourPix = Util.getPixmap(colorMap, side);
-			var normalPix = Util.getPixmap(normalMap, side);
-			new CubemapSideTask(shape, material, colourPix, normalPix, side).run();
+			var colourData = Util.getTexData(colorMap, side);
+			var normalData = Util.getTexData(normalMap, side);
+			var colourPix = Util.getPixmap(colourData);
+			var normalPix = Util.getPixmap(normalData);
+			
+			submit(new CubemapSideTask(shape, material, colourPix, normalPix, side, locks[side.index], () -> {
+				synchronized (locks[side.index]) {
+					if (isDisposed) return;
+					COLOR_BIND.bind(colorMap);
+					colourData.consumeCustomData(side.glEnum);
+					
+					NORMAL_BIND.bind(normalMap);
+					normalData.consumeCustomData(side.glEnum);
+					
+					TexBinder.deactive();
+				}
+			}));
 		}
-		
-		COLOR_BIND.bind(colorMap);
-		colorMap.getCubemapData().consumeCubemapData();
-		
-		NORMAL_BIND.bind(normalMap);
-		normalMap.getCubemapData().consumeCubemapData();
-		
-		TexBinder.deactive();
 	}
 	
 	public void update(float deltra) {
@@ -128,11 +150,22 @@ public class Planet implements Disposable {
 	}
 	
 	public void render(Camera camera) {
-		var shader = Assets.PLANET_SHADER;
+		Assets.PLANET_SHADER.bind();
+		render(camera, Assets.PLANET_SHADER);
+	}
+	
+	public void render(Camera camera, ShaderProgram shader) {
+		if (!futures.isEmpty() && futures.stream().allMatch(Future::isDone)) {
+			futures.clear();
+			notCalulated = false;
+		}
+		if (notCalulated) return;
 		
-		shader.bind();
 		COLOR_BIND.bind(colorMap);
+		// update texture
+		
 		NORMAL_BIND.bind(normalMap);
+		// update texture
 		
 		shader.setUniformMatrix("u_projTrans", camera.combined);
 		shader.setUniformMatrix("u_posTrans", posMat);
@@ -151,26 +184,36 @@ public class Planet implements Disposable {
 		Assets.PLANET_CONTEXT.unVertexAttributes();
 		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, 0);
 		gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
-		
 		TexBinder.deactive();
 	}
 
 	@Override
 	public void dispose() {
+		isDisposed = true;
 		gl.glDeleteBuffer(vertBuf);
 		colorMap.dispose();
 		normalMap.dispose();
+		
+		if (!futures.isEmpty()) {
+			futures.forEach(f->{
+				try {
+					f.get();
+				} catch (Exception e) {
+				}
+			});
+		}
+		
 		pixmaps.forEach(Pixmap::dispose);
 	}
 	
 	private Cubemap newCubemap(Format format) {
 		return new Cubemap(
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false),
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false),
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false),
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false),
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false),
-		new PixmapTextureData(addPixmap(new Pixmap(RES, RES, format)), null, false, false));
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[0]),
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[1]),
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[2]),
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[3]),
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[4]),
+		new SideTextureData(addPixmap(new Pixmap(RES, RES, format)), locks[5]));
 	}
 	
 	private Pixmap addPixmap(Pixmap pixmap) {
@@ -178,26 +221,28 @@ public class Planet implements Disposable {
 		return pixmap;
 	}
 	
+	private void submit(Runnable run) {
+		futures.add(executor.submit(run));
+	}
+	
 	static {
 		POSITIONS = new ArrayList<>(100<<LEVEL);
 		INDICES = new IcoSphereGen().create(POSITIONS, LEVEL);
-		BUFFER = Statics.buffer(INDICES.size() * 3);
-		BUFFER.clear();
+		var buffer = BufferUtils.newIntBuffer(INDICES.size() * 3);
 		SIZE = POSITIONS.size();
 		
-		var buf = BUFFER.asIntBuffer();
 		for (var tri : INDICES) {
-			buf.put(tri.x);
-			buf.put(tri.y);
-			buf.put(tri.z);
+			buffer.put(tri.x);
+			buffer.put(tri.y);
+			buffer.put(tri.z);
 		}
-		buf.flip();
+		buffer.flip();
 		
 		IDXBUF = gl.glGenBuffer();
 		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, IDXBUF);
-		gl.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, buf.remaining() * Integer.BYTES, buf, GL20.GL_STATIC_DRAW);
+		gl.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, buffer.remaining() * Integer.BYTES, buffer, GL20.GL_STATIC_DRAW);
 		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, 0);
-		IDXSIZE = buf.remaining();
+		IDXSIZE = buffer.remaining();
 		
 		Statics.putBuffer(IDXBUF);
 	}
