@@ -27,12 +27,14 @@ public class CratersFeature {
 		}
 	}
 	
-	public void apply(Vector3 point) {
+	public float apply(Vector3 point) {
+		var value = 0f;
 		var vector = new Vector3(point).nor();
 		for (var crater : cratersLocs) {
 			float x = vector.dst(crater.location) / crater.size;
-			point.scl(1.0f + (function(x) * 0.001f));
+			value += function(x) * 0.001f;
 		}
+		return value;
 	}
 	
 	public static float function(float x) {

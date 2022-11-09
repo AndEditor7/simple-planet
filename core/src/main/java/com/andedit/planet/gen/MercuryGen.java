@@ -17,8 +17,8 @@ public class MercuryGen implements ShapeGen, MaterialGen {
 	}
 	
 	@Override
-	public void genShape(Vector3 point) {
-		craters.apply(point);
+	public float genShape(Vector3 point) {
+		return craters.apply(point);
 	}
 	
 	@Override

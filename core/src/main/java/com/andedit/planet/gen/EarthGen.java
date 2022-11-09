@@ -33,8 +33,8 @@ public class EarthGen implements ShapeGen, MaterialGen {
 	}
 
 	@Override
-	public void genShape(Vector3 point) {
-		point.scl(filter.evaluate(point)+1f);
+	public float genShape(Vector3 point) {
+		return filter.evaluate(point)+1f;
 	}
 	
 	@Override

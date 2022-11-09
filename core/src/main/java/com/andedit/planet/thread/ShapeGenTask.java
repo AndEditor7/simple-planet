@@ -26,8 +26,9 @@ public class ShapeGenTask implements Runnable {
 		synchronized (buffer) {
 			buffer.clear();
 			for (int i = 0; i < IcoSphere.SIZE; i++) {
-				shape.genShape(pos.set(IcoSphere.POSITIONS.get(i)));
-				//pos.set(Planet.POSITIONS.get(i));
+				pos.set(IcoSphere.POSITIONS.get(i));
+				pos.scl(shape.genShape(pos));
+				//pos.set(IcoSphere.POSITIONS.get(i));
 				buffer.put(pos.x);
 				buffer.put(pos.y);
 				buffer.put(pos.z);

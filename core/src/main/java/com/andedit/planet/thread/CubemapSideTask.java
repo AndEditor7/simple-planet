@@ -22,7 +22,7 @@ public class CubemapSideTask implements Runnable {
 	private final Vector3 rite;
 	private final Object lock;
 	private final Runnable postRun;
-	//private final float map[][];
+	private final float map[][];
 	
 	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side, Object lock, @Null Runnable postRun) {
 		this.shape = shape;
@@ -39,7 +39,7 @@ public class CubemapSideTask implements Runnable {
 		vec.z = MathUtils.round(vec.z);
 		rite = new Vector3(vec);
 		
-		//map = new float[colourMap.getWidth()][colourMap.getHeight()];
+		map = new float[Planet.RES+2][Planet.RES+2];
 	}
 
 	//     3
@@ -67,31 +67,39 @@ public class CubemapSideTask implements Runnable {
 		var matrial = new Material();
 		
 		synchronized (lock) {
+			for (int x = -1; x < Planet.RES+1; x++)
+			for (int y = -1; y < Planet.RES+1; y++) {
+				calcPosU(uPos, x);
+				calcPosV(vPos, y);
+				pos.set(uPos).add(vPos).add(dir).nor();
+				map[x+1][y+1] = shape.genShape(pos);
+			}
+			
 			for (int x = 0; x < Planet.RES; x++)
 			for (int y = 0; y < Planet.RES; y++) {
 				calcPosU(uPos, x);
 				calcPosV(vPos, y);
 				org.set(uPos).add(vPos).add(dir).nor();
-				shape.genShape(pos.set(org));
+				pos.set(org).scl(map[x+1][y+1]);
 				material.genMaterial(pos, org, color, matrial);
 				colourMap.setColor(color.r, color.g, color.b, matrial.specular);
 				colourMap.drawPixel(x, y);
 				
 				calcPosU(uPos, x);
 				calcPosV(vPos, y-1);
-				shape.genShape(pos1.set(uPos).add(vPos).add(dir).nor());
+				pos1.set(uPos).add(vPos).add(dir).nor().scl(map[x+1][y]);
 				
 				calcPosU(uPos, x+1);
 				calcPosV(vPos, y);
-				shape.genShape(pos2.set(uPos).add(vPos).add(dir).nor());
+				pos2.set(uPos).add(vPos).add(dir).nor().scl(map[x+2][y+1]);
 				
 				calcPosU(uPos, x);
 				calcPosV(vPos, y+1);
-				shape.genShape(pos3.set(uPos).add(vPos).add(dir).nor());
+				pos3.set(uPos).add(vPos).add(dir).nor().scl(map[x+1][y+2]);
 				
 				calcPosU(uPos, x-1);
 				calcPosV(vPos, y);
-				shape.genShape(pos4.set(uPos).add(vPos).add(dir).nor());
+				pos4.set(uPos).add(vPos).add(dir).nor().scl(map[x][y+1]);
 				
 				// Normalize the "triangle" with three vertices (v1, v2, v3)
 				nor1.set(pos2.x - pos3.x, pos2.y - pos3.y, pos2.z - pos3.z);

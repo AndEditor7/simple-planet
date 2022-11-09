@@ -27,12 +27,12 @@ public class CustomShapeGen implements ShapeGen {
 	}
 
 	@Override
-	public void genShape(Vector3 point) {
+	public float genShape(Vector3 point) {
 		float value = noises.evaluate(point);
 		float h = 0.1f;
 		if (value < h) {
 			value = MathUtils.lerp(value, h, 0.4f);
 		}
-		point.scl(value + 1.0f);
+		return value + 1.0f;
 	}
 }

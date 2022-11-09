@@ -102,8 +102,8 @@ public class MarsGen implements ShapeGen, MaterialGen, Atmosphere {
 	}
 	
 	@Override
-	public void genShape(Vector3 point) {
-		point.scl(noises.evaluate(point)+1f);
+	public float genShape(Vector3 point) {
+		return noises.evaluate(point)+1f;
 	}
 
 	@Override
