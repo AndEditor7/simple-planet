@@ -3,14 +3,13 @@ package com.andedit.planet;
 import com.andedit.planet.util.API;
 import com.andedit.planet.util.AssetManager;
 import com.andedit.planet.util.Inputs;
+import com.andedit.planet.util.Noise;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Collections;
-
-import make.some.noise.Noise;
 
 public class Main extends Base {
 	public static API api;

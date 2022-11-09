@@ -1,9 +1,10 @@
-package com.andedit.planet.gen.shape;
+package com.andedit.planet.interfaces;
 
 import com.badlogic.gdx.math.Vector3;
 
 /** Shape generator interface for planet. */
 @FunctionalInterface
 public interface ShapeGen {
-	void apply(Vector3 point);
+	/** point in sphere to modify */
+	void genShape(Vector3 point);
 }

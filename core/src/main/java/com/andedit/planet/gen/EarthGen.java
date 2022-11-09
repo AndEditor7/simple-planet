@@ -1,12 +1,15 @@
 package com.andedit.planet.gen;
 
-import com.andedit.planet.gen.material.MaterialGen;
-import com.andedit.planet.gen.shape.ShapeGen;
+import com.andedit.planet.gen.noise.MultiNoise;
+import com.andedit.planet.gen.noise.NoiseFilter;
+import com.andedit.planet.gen.noise.NormalNoise;
+import com.andedit.planet.gen.noise.SuperNoise;
+import com.andedit.planet.interfaces.MaterialGen;
+import com.andedit.planet.interfaces.ShapeGen;
+import com.andedit.planet.util.Noise;
 import com.andedit.planet.util.Operator;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector3;
-
-import make.some.noise.Noise;
 
 public class EarthGen implements ShapeGen, MaterialGen {
 	
@@ -30,12 +33,12 @@ public class EarthGen implements ShapeGen, MaterialGen {
 	}
 
 	@Override
-	public void apply(Vector3 point) {
+	public void genShape(Vector3 point) {
 		point.scl(filter.evaluate(point)+1f);
 	}
 	
 	@Override
-	public Color getColor(Vector3 point, Vector3 original) {
-		return Color.WHITE;
+	public void genMaterial(Vector3 point, Vector3 original, Color colorOut, Material materialOut) {
+		colorOut.set(Color.WHITE);
 	}
 }

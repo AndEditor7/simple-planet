@@ -1,7 +1,5 @@
 package com.andedit.planet.graphic.vertex;
 
-import java.nio.Buffer;
-
 import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
@@ -13,28 +11,13 @@ public interface VertContext
 	
 	VertexAttributes getAttrs();
 	
-	default void setVertexAttributes(@Null Buffer buffer) {
-		setVertexAttributes(buffer, getShader());
+	default void setVertexAttributes() {
+		setVertexAttributes(getShader());
 	}
 	
-	default void setVertexAttributes(@Null Buffer buffer, @Null ShaderProgram shader) {
-		final var attributes = getAttrs();
+	default void setVertexAttributes(@Null ShaderProgram shader) {
 		shader = shader == null ? getShader() : shader;
-		for (int i = 0; i < attributes.size(); i++) {
-			final VertexAttribute attribute = attributes.get(i);
-			final int location = shader.getAttributeLocation(attribute.alias);
-			if (location < 0) continue;
-			shader.enableVertexAttribute(location);
-
-			if (buffer == null) {
-				shader.setVertexAttribute(location, attribute.numComponents, attribute.type, attribute.normalized,
-						attributes.vertexSize, attribute.offset);
-			} else {
-				buffer.position(attribute.offset);
-				shader.setVertexAttribute(location, attribute.numComponents, attribute.type, attribute.normalized,
-						attributes.vertexSize, buffer);
-			}
-		}
+		setVertAttrs(shader, getAttrs());
 	}
 	
 	default void unVertexAttributes() {
@@ -42,11 +25,8 @@ public interface VertContext
 	}
 	
 	default void unVertexAttributes(@Null ShaderProgram shader) {
-		final var attributes = getAttrs();
 		shader = shader == null ? getShader() : shader;
-		for (int i = 0; i < attributes.size(); i++) {
-			shader.disableVertexAttribute(attributes.get(i).alias);
-		}
+		unVertAttrs(shader, getAttrs());
 	}
 	
 	static VertContext of(ShaderProgram shader, VertexAttribute... attributeArray) {
@@ -62,5 +42,23 @@ public interface VertContext
 				return attributes;
 			}
 		};
+	}
+	
+	static void setVertAttrs(ShaderProgram shader, VertexAttributes attributes) {
+		for (int i = 0; i < attributes.size(); i++) {
+			final VertexAttribute attribute = attributes.get(i);
+			final int location = shader.getAttributeLocation(attribute.alias);
+			if (location < 0) continue;
+			shader.enableVertexAttribute(location);
+
+			shader.setVertexAttribute(location, attribute.numComponents, attribute.type, attribute.normalized,
+					attributes.vertexSize, attribute.offset);
+		}
+	}
+	
+	static void unVertAttrs(ShaderProgram shader, VertexAttributes attributes) {
+		for (int i = 0; i < attributes.size(); i++) {
+			shader.disableVertexAttribute(attributes.get(i).alias);
+		}
 	}
 }

@@ -1,14 +1,19 @@
 package com.andedit.planet.util;
 
+import static com.badlogic.gdx.Gdx.gl;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import com.andedit.planet.Statics;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.math.GridPoint3;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.ObjectIntMap;
 
 // Source: http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
-public class IcoSphereGen {
+public class IcoSphere {
 
 	private int index;
 	private ObjectIntMap<Long> middlePointIndexCache;
@@ -124,5 +129,33 @@ public class IcoSphereGen {
 		}
 
 		return faces;
+	}
+	
+	public static final int LEVEL = 6; // 5 or 6
+	public static final int SIZE;
+	public static final List<Vector3> POSITIONS;
+	public static final List<GridPoint3> INDICES;
+	public static final int IDXBUF, IDXSIZE;
+	
+	static {
+		POSITIONS = new ArrayList<>(100<<LEVEL);
+		INDICES = new IcoSphere().create(POSITIONS, LEVEL);
+		var buffer = BufferUtils.newIntBuffer(INDICES.size() * 3);
+		SIZE = POSITIONS.size();
+		
+		for (var tri : INDICES) {
+			buffer.put(tri.x);
+			buffer.put(tri.y);
+			buffer.put(tri.z);
+		}
+		buffer.flip();
+		
+		IDXBUF = gl.glGenBuffer();
+		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, IDXBUF);
+		gl.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, buffer.remaining() * Integer.BYTES, buffer, GL20.GL_STATIC_DRAW);
+		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, 0);
+		IDXSIZE = buffer.remaining();
+		
+		Statics.putBuffer(IDXBUF);
 	}
 }

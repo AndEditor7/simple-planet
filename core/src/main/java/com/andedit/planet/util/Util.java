@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FacedCubemapData;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Event;
@@ -70,6 +71,10 @@ public final class Util {
 			}
 		}
 		return true;
+	}
+	
+	public static float bias(double x, double bias) {
+		return Interpolation.exp10In.apply((float) x);
 	}
 
 	public static float modAngle(float angle) {

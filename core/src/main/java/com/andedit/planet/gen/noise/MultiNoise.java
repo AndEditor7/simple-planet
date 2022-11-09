@@ -1,8 +1,7 @@
-package com.andedit.planet.gen;
+package com.andedit.planet.gen.noise;
 
 import com.andedit.planet.util.Operator;
 import com.andedit.planet.util.Pair;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 
 /** A multi noise evaluation, Uses NoiseFilter interface. */
@@ -51,13 +50,13 @@ public class MultiNoise implements NoiseFilter {
 	}
 
 	@Override
-	public float evaluate(Vector3 point) {
+	public float evaluate(float x, float y, float z) {
 		float value = 0;
 		for (int i = 0; i < noises.size; i++) {
 			var pair = noises.get(i);
 			var filter = pair.left;
 			var operator = pair.right;
-			value = operator.compute(value, filter.evaluate(point));
+			value = operator.compute(value, filter.evaluate(x, y, z));
 		}
 		return value * amb;
 	}

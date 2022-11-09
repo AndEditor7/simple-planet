@@ -4,19 +4,20 @@ import static com.badlogic.gdx.Gdx.gl;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.andedit.planet.Assets;
 import com.andedit.planet.Statics;
-import com.andedit.planet.gen.material.MaterialGen;
-import com.andedit.planet.gen.shape.ShapeGen;
 import com.andedit.planet.graphic.SideTextureData;
+import com.andedit.planet.interfaces.Atmosphere;
+import com.andedit.planet.interfaces.MaterialGen;
+import com.andedit.planet.interfaces.Properties;
+import com.andedit.planet.interfaces.ShapeGen;
 import com.andedit.planet.thread.CubemapSideTask;
 import com.andedit.planet.thread.ShapeGenTask;
 import com.andedit.planet.trans.Trans;
-import com.andedit.planet.util.IcoSphereGen;
+import com.andedit.planet.util.IcoSphere;
 import com.andedit.planet.util.TexBinder;
 import com.andedit.planet.util.Util;
 import com.badlogic.gdx.graphics.Camera;
@@ -24,25 +25,22 @@ import com.badlogic.gdx.graphics.Cubemap;
 import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Pixmap.Blending;
+import com.badlogic.gdx.graphics.Pixmap.Filter;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.math.GridPoint3;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.Null;
 
-public class Planet implements Disposable {
+public class Planet implements Disposable, SpaceObj {
 	
-	public static final int LEVEL = 6; // 5 or 6
-	public static final int RES = 1024 / 2; // 512
-	public static final int SIZE;
-	public static final List<Vector3> POSITIONS;
+	public static final int QUALITY = 0;
+	public static final int RES = 512<<QUALITY; // 512
 	
-	private static final List<GridPoint3> INDICES;
-	private static final int IDXBUF, IDXSIZE;
 	private static final TexBinder COLOR_BIND = new TexBinder();
 	private static final TexBinder NORMAL_BIND = new TexBinder();
 	
@@ -59,15 +57,18 @@ public class Planet implements Disposable {
 	
 	private ShapeGen shape;
 	private MaterialGen material;
+	private Atmosphere atmosphere;
 	private Trans trans;
+	private Properties props;
 	
 	private final Matrix4 posMat;
 	private final Matrix3 norMat;
-	private boolean notCalulated = true;
+	private boolean canRender = false;
 	private boolean isDisposed;
+	private Runnable callback;
 	
 	public Planet() {
-		buffer = BufferUtils.newFloatBuffer(SIZE * 3);
+		buffer = BufferUtils.newFloatBuffer(IcoSphere.SIZE * 3);
 		System.out.println("floats: " + buffer.capacity());
 		
 		locks = new Object[6];
@@ -78,15 +79,15 @@ public class Planet implements Disposable {
 		pixmaps = new ArrayList<>(12);
 		vertBuf = gl.glGenBuffer();
 		
-		colorMap  = newCubemap(Format.RGB888);
+		colorMap  = newCubemap(Format.RGBA8888);
 		COLOR_BIND.bind(colorMap);
 		colorMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
-		colorMap.unsafeSetAnisotropicFilter(8);
+		//colorMap.unsafeSetAnisotropicFilter(8);
 		
-		normalMap = newCubemap(Format.RGB888);
+		normalMap = newCubemap(Format.RGBA8888);
 		NORMAL_BIND.bind(normalMap);
 		normalMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
-		normalMap.unsafeSetAnisotropicFilter(8);
+		//normalMap.unsafeSetAnisotropicFilter(8);
 		
 		TexBinder.deactive();
 		
@@ -94,6 +95,8 @@ public class Planet implements Disposable {
 		norMat = new Matrix3();
 		executor = Statics.PLANET_EXECUTOR;
 		futures = new ArrayList<>();
+		
+		props = Properties.INSTANCE;
 	}
 	
 	public void setShapeGen(ShapeGen shape) {
@@ -104,12 +107,26 @@ public class Planet implements Disposable {
 		this.material = material;
 	}
 	
+	public void setAtmosphere(Atmosphere atmosphere) {
+		this.atmosphere = atmosphere;
+	}
+	
+	@Override
 	public void setTrans(Trans trans) {
 		this.trans = trans;
 	}
 	
+	public void setProps(Properties props) {
+		this.props = props;
+	}
+	
 	public void calulate() {
+		calulate(null);
+	}
+	
+	public void calulate(@Null Runnable callback) {
 		if (!futures.isEmpty()) return;
+		this.callback = callback;
 		
 		submit(new ShapeGenTask(buffer, shape, () -> {
 			if (isDisposed) return;
@@ -141,6 +158,7 @@ public class Planet implements Disposable {
 		}
 	}
 	
+	@Override
 	public void update(float deltra) {
 		if (trans != null) {
 			trans.update(deltra);
@@ -149,24 +167,37 @@ public class Planet implements Disposable {
 		}
 	}
 	
-	public void render(Camera camera) {
-		Assets.PLANET_SHADER.bind();
-		render(camera, Assets.PLANET_SHADER);
+	@Override
+	public Matrix4 getTrans() {
+		return posMat;
 	}
 	
-	public void render(Camera camera, ShaderProgram shader) {
+	@Override
+	public Vector3 getLightDir() {
+		return lightDir;
+	}
+	
+	@Override
+	public boolean canRender() {
+		return canRender;
+	}
+	
+	@Override
+	public void render(Camera camera) {
 		if (!futures.isEmpty() && futures.stream().allMatch(Future::isDone)) {
 			futures.clear();
-			notCalulated = false;
+			canRender = true;
+			if (callback != null) {
+				callback.run();
+				callback = null;
+			}
 		}
-		if (notCalulated) return;
+		if (!canRender) return;
 		
+		var shader = Assets.PLANET_SHADER;
+		shader.bind();
 		COLOR_BIND.bind(colorMap);
-		// update texture
-		
 		NORMAL_BIND.bind(normalMap);
-		// update texture
-		
 		shader.setUniformMatrix("u_projTrans", camera.combined);
 		shader.setUniformMatrix("u_posTrans", posMat);
 		shader.setUniformMatrix("u_normTrans", norMat);
@@ -174,17 +205,26 @@ public class Planet implements Disposable {
 		shader.setUniformf("u_lightDir", lightDir);
 		shader.setUniformi("u_colorMap", COLOR_BIND.unit);
 		shader.setUniformi("u_normalMap", NORMAL_BIND.unit);
+		shader.setUniformf("u_specularScl", props.getSpecularMax());
+		shader.setUniformf("u_shininessScl", props.getShininessMax());
+		shader.setUniformf("u_gamma", props.getGamma());
+		shader.setUniformf("u_amb", props.getAmb());
 		
 		gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, vertBuf);
-		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, IDXBUF);
+		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, IcoSphere.IDXBUF);
 		Assets.PLANET_CONTEXT.setVertexAttributes(null);
 		
-		gl.glDrawElements(GL20.GL_TRIANGLES, IDXSIZE, GL20.GL_UNSIGNED_INT, 0);
+		gl.glDrawElements(GL20.GL_TRIANGLES, IcoSphere.IDXSIZE, GL20.GL_UNSIGNED_INT, 0);
 		
 		Assets.PLANET_CONTEXT.unVertexAttributes();
 		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, 0);
 		gl.glBindBuffer(GL20.GL_ARRAY_BUFFER, 0);
 		TexBinder.deactive();
+	}
+	
+	@Override
+	public Atmosphere getAtmo() {
+		return atmosphere;
 	}
 
 	@Override
@@ -218,32 +258,12 @@ public class Planet implements Disposable {
 	
 	private Pixmap addPixmap(Pixmap pixmap) {
 		pixmaps.add(pixmap);
+		pixmap.setBlending(Blending.None);
+		pixmap.setFilter(Filter.NearestNeighbour);
 		return pixmap;
 	}
 	
 	private void submit(Runnable run) {
 		futures.add(executor.submit(run));
-	}
-	
-	static {
-		POSITIONS = new ArrayList<>(100<<LEVEL);
-		INDICES = new IcoSphereGen().create(POSITIONS, LEVEL);
-		var buffer = BufferUtils.newIntBuffer(INDICES.size() * 3);
-		SIZE = POSITIONS.size();
-		
-		for (var tri : INDICES) {
-			buffer.put(tri.x);
-			buffer.put(tri.y);
-			buffer.put(tri.z);
-		}
-		buffer.flip();
-		
-		IDXBUF = gl.glGenBuffer();
-		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, IDXBUF);
-		gl.glBufferData(GL20.GL_ELEMENT_ARRAY_BUFFER, buffer.remaining() * Integer.BYTES, buffer, GL20.GL_STATIC_DRAW);
-		gl.glBindBuffer(GL20.GL_ELEMENT_ARRAY_BUFFER, 0);
-		IDXSIZE = buffer.remaining();
-		
-		Statics.putBuffer(IDXBUF);
 	}
 }

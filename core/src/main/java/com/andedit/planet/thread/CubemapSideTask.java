@@ -1,10 +1,13 @@
 package com.andedit.planet.thread;
 
-import com.andedit.planet.gen.material.MaterialGen;
-import com.andedit.planet.gen.shape.ShapeGen;
+import com.andedit.planet.gen.Material;
+import com.andedit.planet.interfaces.MaterialGen;
+import com.andedit.planet.interfaces.ShapeGen;
 import com.andedit.planet.world.Planet;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cubemap.CubemapSide;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Null;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -19,6 +22,7 @@ public class CubemapSideTask implements Runnable {
 	private final Vector3 rite;
 	private final Object lock;
 	private final Runnable postRun;
+	//private final float map[][];
 	
 	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side, Object lock, @Null Runnable postRun) {
 		this.shape = shape;
@@ -28,7 +32,14 @@ public class CubemapSideTask implements Runnable {
 		this.side = side;
 		this.lock = lock;
 		this.postRun = postRun;
-		rite = new Vector3(side.direction).crs(side.up);
+		
+		var vec = new Vector3(side.direction).crs(side.up);
+		vec.x = MathUtils.round(vec.x);
+		vec.y = MathUtils.round(vec.y);
+		vec.z = MathUtils.round(vec.z);
+		rite = new Vector3(vec);
+		
+		//map = new float[colourMap.getWidth()][colourMap.getHeight()];
 	}
 
 	//     3
@@ -52,6 +63,8 @@ public class CubemapSideTask implements Runnable {
 		var nor2 = new Vector3();
 		
 		var dir = side.direction;
+		var color = new Color();
+		var matrial = new Material();
 		
 		synchronized (lock) {
 			for (int x = 0; x < Planet.RES; x++)
@@ -59,38 +72,45 @@ public class CubemapSideTask implements Runnable {
 				calcPosU(uPos, x);
 				calcPosV(vPos, y);
 				org.set(uPos).add(vPos).add(dir).nor();
-				shape.apply(pos.set(org));
-				colourMap.setColor(material.getColor(pos, org));
+				shape.genShape(pos.set(org));
+				material.genMaterial(pos, org, color, matrial);
+				colourMap.setColor(color.r, color.g, color.b, matrial.specular);
 				colourMap.drawPixel(x, y);
 				
 				calcPosU(uPos, x);
 				calcPosV(vPos, y-1);
-				shape.apply(pos1.set(uPos).add(vPos).add(dir).nor());
+				shape.genShape(pos1.set(uPos).add(vPos).add(dir).nor());
 				
 				calcPosU(uPos, x+1);
 				calcPosV(vPos, y);
-				shape.apply(pos2.set(uPos).add(vPos).add(dir).nor());
+				shape.genShape(pos2.set(uPos).add(vPos).add(dir).nor());
 				
 				calcPosU(uPos, x);
 				calcPosV(vPos, y+1);
-				shape.apply(pos3.set(uPos).add(vPos).add(dir).nor());
+				shape.genShape(pos3.set(uPos).add(vPos).add(dir).nor());
 				
 				calcPosU(uPos, x-1);
 				calcPosV(vPos, y);
-				shape.apply(pos4.set(uPos).add(vPos).add(dir).nor());
+				shape.genShape(pos4.set(uPos).add(vPos).add(dir).nor());
 				
+				// Normalize the "triangle" with three vertices (v1, v2, v3)
 				nor1.set(pos2.x - pos3.x, pos2.y - pos3.y, pos2.z - pos3.z);
 				nor1.crs(pos1.x - pos3.x, pos1.y - pos3.y, pos1.z - pos3.z);
 				
+				// Normalize the second part of the "triangle" with three vertices (v2, v4, v1)
 				nor2.set(pos4.x - pos1.x, pos4.y - pos1.y, pos4.z - pos1.z);
 				nor2.crs(pos3.x - pos1.x, pos3.y - pos1.y, pos3.z - pos1.z);
 				
+				// Add both normals together then normalize the vector.
 				pos.set(nor1).add(nor2).nor();
-				normalMap.setColor((pos.x/2f)+0.5f, (pos.y/2f)+0.5f, (pos.z/2f)+0.5f, 1);
+				
+				normalMap.setColor((pos.x*0.5f)+0.5f, (pos.y*0.5f)+0.5f, (pos.z*0.5f)+0.5f, matrial.shininess);
 				normalMap.drawPixel(x, y);
 			}
 		}
 		
+		// Do the post-run in the main thread if available.
+		// Usually used for uploading/updating the texture to the GPU.
 		if (postRun != null) {
 			Gdx.app.postRunnable(postRun);
 		}

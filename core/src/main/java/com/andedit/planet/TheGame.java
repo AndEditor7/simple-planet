@@ -2,11 +2,8 @@ package com.andedit.planet;
 
 import static com.andedit.planet.Main.main;
 
-import com.andedit.planet.gen.EarthGen;
-import com.andedit.planet.gen.material.ColorMaterial;
-import com.andedit.planet.gen.material.PrideMaterialGen;
-import com.andedit.planet.gen.shape.CustomShapeGen;
-import com.andedit.planet.gen.shape.SimpleShapeGen;
+import com.andedit.planet.gen.MarsGen;
+import com.andedit.planet.gen.MercuryGen;
 import com.andedit.planet.input.control.Control;
 import com.andedit.planet.input.control.DesktopControl;
 import com.andedit.planet.trans.RotationTrans;
@@ -14,12 +11,13 @@ import com.andedit.planet.util.Camera;
 import com.andedit.planet.util.Inputs;
 import com.andedit.planet.util.Util;
 import com.andedit.planet.world.Planet;
+import com.andedit.planet.world.Renderer;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 
 public class TheGame extends ScreenAdapter {
 	
@@ -28,6 +26,9 @@ public class TheGame extends ScreenAdapter {
 	private final Camera camera;
 	private final Control control;
 	private final Planet planet;
+	private final Renderer render;
+	
+	private boolean firstStart = true;
 	
 	public TheGame() {
 		planet = new Planet();
@@ -35,14 +36,18 @@ public class TheGame extends ScreenAdapter {
 		refreah();
 		camera = new Camera();
 		control = new DesktopControl();
+		render = new Renderer(new Array<>());
+		render.add(planet);
 		
-		camera.near = 0.05f;
-		camera.far = 10f;
+		camera.near = 0.1f;
+		camera.far = 50f;
 		camera.fieldOfView = 40;
-		//camera.fieldOfView = 60;
 		camera.viewportWidth = Util.getW();
 		camera.viewportHeight = Util.getH();
-		camera.position.set(0, 0, 3.4f);
+		camera.position.set(0, 0, 3.5f);
+		camera.direction.set(1,0,0);
+		camera.up.set(0,1,0);
+		camera.yaw = 180;
 	}
 	
 	@Override
@@ -64,38 +69,49 @@ public class TheGame extends ScreenAdapter {
 	}
 	
 	private void mov(float delta) {
+		camera.fieldOfView = 60;
 		Vector2 look = control.getLook();
 		camera.yaw += look.x;
 		camera.pitch += look.y;
 		float scl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) ? 2 : 1;
 		scl *= delta * 0.4f;
 		Vector2 move = control.getMove().rotateDeg(-camera.yaw).scl(2f);
-		//camera.translate(move.x * scl, control.getMoveY()  * scl, move.y * scl);
-		//camera.updateRotation();
+		camera.translate(move.x * scl, control.getMoveY()  * scl, move.y * scl);
+		camera.updateRotation();
 		control.clear();
 	}
 	
 	private void refreah() {
-		//var gen = new EarthGen();
-		planet.setShapeGen(new SimpleShapeGen());
-		//planet.setMaterialGen(new ColorMaterial(Color.WHITE));
-		planet.setMaterialGen(new PrideMaterialGen());
-		planet.calulate();
+		var gen = new MarsGen();
+		planet.setShapeGen(gen);
+		planet.setMaterialGen(gen);
+		planet.setAtmosphere(gen);
+		//planet.setMaterialGen(new PrideMaterialGen());
+		planet.calulate(() -> {
+			if (firstStart) {
+				firstStart = false;
+				camera.yaw = 180;
+				camera.pitch = 0;
+				control.clear();
+			}
+		});
 	}
 	
 	@Override
 	public void render(float delta) {
 		mov(delta);
 		
-		if (Inputs.isKeyJustPressed(Keys.F4)) {
+		if (Inputs.isKeyJustPressed(Keys.F4) || Inputs.isKeyJustPressed(Keys.ENTER)) {
 			refreah();
 		}
+		if (Inputs.isKeyJustPressed(Keys.F5)) {
+			//planet.amb = 0.2f;
+		}
 		
-		Gdx.gl.glLineWidth(1);
 		Util.glClear();
 		camera.update(false);
 		planet.update(delta);
-		planet.render(camera);
+		render.render(camera);
 	}
 	
 	@Override

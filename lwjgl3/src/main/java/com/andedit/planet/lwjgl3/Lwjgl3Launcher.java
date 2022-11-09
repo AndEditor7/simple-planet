@@ -20,8 +20,9 @@ public class Lwjgl3Launcher {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setTitle("Simple Planet");
 		config.useVsync(true);
-		//config.enableGLDebugOutput(true, System.err);
-		config.setOpenGLEmulation(GLEmulation.ANGLE_GLES20, 3, 2);
+		config.enableGLDebugOutput(true, System.err);
+		config.setWindowedMode(800, 600);
+		//config.setOpenGLEmulation(GLEmulation.ANGLE_GLES20, 3, 2);
 		//// Limits FPS to the refresh rate of the currently active monitor.
 		//config.setForegroundFPS(Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate);
 		//// If you remove the above line and set Vsync to false, you can get unlimited FPS, which can be

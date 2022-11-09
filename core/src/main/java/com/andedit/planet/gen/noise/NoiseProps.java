@@ -1,4 +1,4 @@
-package com.andedit.planet.gen;
+package com.andedit.planet.gen.noise;
 
 import com.andedit.planet.util.Operator;
 

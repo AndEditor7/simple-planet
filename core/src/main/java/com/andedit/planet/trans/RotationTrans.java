@@ -8,12 +8,12 @@ public class RotationTrans implements Trans {
 
 	@Override
 	public void update(float delta) {
-		rad += 0.25f * delta;
+		rad += 0.1f * delta;
 	}
 
 	@Override
 	public void apply(Matrix4 mat) {
-		mat.idt().rotateRad(Vector3.Y, rad);
+		mat.idt().scl(1).rotateRad(Vector3.Y, rad);
 	}
 
 	@Override

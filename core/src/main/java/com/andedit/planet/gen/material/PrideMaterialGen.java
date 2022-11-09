@@ -1,6 +1,8 @@
 package com.andedit.planet.gen.material;
 
-import com.andedit.planet.gen.NormalNoise;
+import com.andedit.planet.gen.Material;
+import com.andedit.planet.gen.noise.NormalNoise;
+import com.andedit.planet.interfaces.MaterialGen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
@@ -18,7 +20,7 @@ public class PrideMaterialGen implements MaterialGen {
 	}
 
 	@Override
-	public Color getColor(Vector3 pos, Vector3 original) {
+	public void genMaterial(Vector3 pos, Vector3 original, Color colorOut, Material materialOut) {
 		float y = ((pos.y * 0.55f) + 0.5f) * flag.size();
 		y += color.evaluate(pos);
 		int i = MathUtils.clamp(MathUtils.floor(y), 0, flag.size()-1);
@@ -26,7 +28,8 @@ public class PrideMaterialGen implements MaterialGen {
 		//float y = (float)(color.evaluate(pos) * flag.size());
 		//int i = MathUtils.clamp(MathUtils.floor((y/1.5f)+2f), 0, flag.size()-1);
 		
-		return flag.get(i);
+		colorOut.set(flag.get(i));
+		materialOut.set(1, 1);
 	}
 	
 	public static enum Flag {

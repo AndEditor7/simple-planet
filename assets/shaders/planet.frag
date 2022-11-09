@@ -12,21 +12,34 @@ uniform vec3 u_position;
 uniform samplerCube u_colorMap;
 uniform samplerCube u_normalMap;
 uniform mat3 u_normTrans;
+uniform float u_specularScl;
+uniform float u_shininessScl;
+uniform float u_gamma; // 2.0
+uniform float u_amb; // ambient
 
 void main()
 {
 	vec3 point = normalize(v_normal);
+	vec4 colourPix = textureCube(u_colorMap, point);
+	vec4 normalPix = textureCube(u_normalMap, point);
 	
-	vec3 norDat = (textureCube(u_normalMap, point).xyz-0.5)*2.0;
+	vec3 sphereNor = normalize(u_normTrans * point);
+	float sphereDot = dot(sphereNor, u_lightDir);
+	
+	vec3 norDat = (normalPix.xyz-0.5)*2.0;
 	vec3 normal = normalize(u_normTrans * norDat);
-	float away = -dot(normalize(u_normTrans * point), u_lightDir);
-	normal = normalize(mix(normal, -u_lightDir, clamp(away, 0.0, 1.0)));
+	normal = normalize(mix(normal, -u_lightDir, clamp(-sphereDot, 0.0, 1.0))); // Fix lighting behide the planet from sunlight
+	float noiseDot = dot(normal, u_lightDir);
 	
 	vec3 viewDir = normalize(u_position - v_position);
-    vec3 reflectDir = reflect(-u_lightDir, normal);  
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 8.0) * 0.1;
-    float light = max(dot(normal, u_lightDir), 0.0);
+    vec3 reflectDir = reflect(-u_lightDir, normal); 
+    
+    float specular = colourPix.a * u_specularScl;
+    float shininess = normalPix.a * u_shininessScl;
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess) * specular;
+	
+    float light = mix(max(noiseDot, 0.0), 1.0, max(sphereDot, 0.0) * u_amb);
 
-	vec4 pix = pow(textureCube(u_colorMap, point), vec4(1.0/2.2));
-	gl_FragColor = pow(pix * light + spec, vec4(2.2));
+	vec3 pix = pow(colourPix.rgb, vec3(1.0/u_gamma));
+	gl_FragColor = vec4(pow(pix * light + spec, vec3(u_gamma)), 1.0);
 }

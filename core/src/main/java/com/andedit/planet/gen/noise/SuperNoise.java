@@ -1,9 +1,8 @@
-package com.andedit.planet.gen;
+package com.andedit.planet.gen.noise;
 
 import java.util.Random;
 
 import com.andedit.planet.util.OpenSimplex2S;
-import com.badlogic.gdx.math.Vector3;
 
 public class SuperNoise implements NoiseFilter {
 	
@@ -11,9 +10,9 @@ public class SuperNoise implements NoiseFilter {
 	
 	public float freq = 1;
 	public float amb = 1;
-
+	
 	@Override
-	public float evaluate(Vector3 point) {
-		return OpenSimplex2S.noise3_Fallback(seed, point.x * freq, point.y * freq, point.z * freq) * amb;
+	public float evaluate(float x, float y, float z) {
+		return OpenSimplex2S.noise3_Fallback(seed, x * freq, y * freq, z * freq) * amb;
 	}
 }

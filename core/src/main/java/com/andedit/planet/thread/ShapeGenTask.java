@@ -2,8 +2,8 @@ package com.andedit.planet.thread;
 
 import java.nio.FloatBuffer;
 
-import com.andedit.planet.gen.shape.ShapeGen;
-import com.andedit.planet.world.Planet;
+import com.andedit.planet.interfaces.ShapeGen;
+import com.andedit.planet.util.IcoSphere;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Null;
@@ -25,8 +25,8 @@ public class ShapeGenTask implements Runnable {
 		var pos = new Vector3();
 		synchronized (buffer) {
 			buffer.clear();
-			for (int i = 0; i < Planet.SIZE; i++) {
-				shape.apply(pos.set(Planet.POSITIONS.get(i)));
+			for (int i = 0; i < IcoSphere.SIZE; i++) {
+				shape.genShape(pos.set(IcoSphere.POSITIONS.get(i)));
 				//pos.set(Planet.POSITIONS.get(i));
 				buffer.put(pos.x);
 				buffer.put(pos.y);
