@@ -85,6 +85,8 @@ public class DesktopControl extends InputAdapter implements Control {
 	@Override
 	public void clear() {
 		delta.set(0, 0);
+		last.x = Gdx.input.getX();
+		last.y = Gdx.input.getY();
 	}
 	
 	@Override

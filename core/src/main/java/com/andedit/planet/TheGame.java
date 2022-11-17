@@ -69,7 +69,7 @@ public class TheGame extends ScreenAdapter {
 	}
 	
 	private void mov(float delta) {
-		camera.fieldOfView = 60;
+		camera.fieldOfView = 40;
 		Vector2 look = control.getLook();
 		camera.yaw += look.x;
 		camera.pitch += look.y;
@@ -82,10 +82,11 @@ public class TheGame extends ScreenAdapter {
 	}
 	
 	private void refreah() {
-		var gen = new MarsGen();
+		var gen = new MercuryGen();
 		planet.setShapeGen(gen);
 		planet.setMaterialGen(gen);
-		planet.setAtmosphere(gen);
+		//planet.setAtmosphere(gen);
+		planet.setProps(gen);
 		//planet.setMaterialGen(new PrideMaterialGen());
 		planet.calulate(() -> {
 			if (firstStart) {

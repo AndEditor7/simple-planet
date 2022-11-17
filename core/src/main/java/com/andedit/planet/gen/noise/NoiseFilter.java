@@ -5,6 +5,8 @@ import com.badlogic.gdx.math.Vector3;
 /** A NoiseFilter interface. It takes a Vector3 input and output the value. */
 @FunctionalInterface
 public interface NoiseFilter {
+	NoiseFilter ZERO = (x, y, z) -> 0;
+
 	default float evaluate(Vector3 point) {
 		return evaluate(point.x, point.y, point.z);
 	}

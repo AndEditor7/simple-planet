@@ -1,23 +1,30 @@
 package com.andedit.planet.gen.feature;
 
+import static com.badlogic.gdx.math.Interpolation.smooth;
+
 import java.util.random.RandomGenerator;
 
-import com.andedit.planet.util.Util;
-import com.badlogic.gdx.math.Interpolation;
+import com.andedit.planet.gen.noise.NoiseFilter;
+import com.badlogic.gdx.math.Interpolation.ExpIn;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.math.Interpolation.ExpIn;
 
 public class CratersFeature {
 	
-	private final int amount;
+	public static final float DEPTH = 0.6f;
+	
+	private static final float MIN_SIZE = 0.01f;
+	
+	public NoiseFilter warping = NoiseFilter.ZERO;
+	
+	private final int amount; // 5000
 	private final Crater cratersLocs[];
 	
-	public CratersFeature(RandomGenerator random, int amount, double bias) {
+	public CratersFeature(RandomGenerator random, int amount) {
 		cratersLocs = new Crater[this.amount = amount];
-		var exp = new ExpIn(2, 30);
+		var exp = new ExpIn(2, 12);
 		for (int i = 0; i < amount; i++) {
-			float size = MathUtils.lerp(0.015f, 0.2f, exp.apply(random.nextFloat()));
+			float size = MathUtils.lerp(MIN_SIZE, 0.08f, exp.apply(random.nextFloat()));
 			
 			float u = random.nextFloat();
 			float v = random.nextFloat();
@@ -27,35 +34,43 @@ public class CratersFeature {
 		}
 	}
 	
-	public float apply(Vector3 point) {
-		var value = 0f;
+	public float apply(Vector3 point, float value) {
+		var warp = warping.evaluate(point);
 		var vector = new Vector3(point).nor();
 		for (var crater : cratersLocs) {
-			float x = vector.dst(crater.location) / crater.size;
-			value += function(x) * 0.001f;
+			float x = (vector.dst(crater.location)+warp) / crater.size;
+			float min = 0.5f;
+			float size = 0.32f * (1f-((crater.size-MIN_SIZE)*0.7f));
+			value *= flatten(x, min, size);
+			value += function(x, min, size) * 0.0018f;
 		}
 		return value;
 	}
 	
-	public static float function(float x) {
+	public static float function(float x, float min, float size) {
 		float val = 0;
-		float depth = 0.6f;
-		float min = 0.5f;
-		float size = 0.1f;
+		size *= 0.5f;
 		if (x > min) {
 			float start = (x-min) / size;
 			if (start > 1f) {
-				val = lerp(1f, depth, (start-1f));
+				val = smooth.apply(1f, DEPTH, Math.min(start-1f, 1f));
 			} else {
-				val = lerp(val, 1f, start);
+				val = smooth.apply(val, 1f, Math.min(start, 1f));
 			}
 		}
-		return val - depth;
+		return val - DEPTH;
 	}
 	
-	public static float lerp (float fromValue, float toValue, float p) {
-		p = Math.min(p, 1f);
-		return fromValue + (toValue - fromValue) * (p * p * (3 - 2 * p));
+	public static float flatten(float x, float min, float size) {
+		float val = 0;
+		size *= 0.5f;
+		if (x > min) {
+			float start = (x-min) / size;
+			if (start > 1f) {
+				val = smooth.apply(Math.min(start-1f, 1f));
+			}
+		}
+		return MathUtils.lerp(val, 1f, 0.4f); // 0.3f
 	}
 	
 	private class Crater {

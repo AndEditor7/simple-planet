@@ -22,7 +22,6 @@ public class CubemapSideTask implements Runnable {
 	private final Vector3 rite;
 	private final Object lock;
 	private final Runnable postRun;
-	private final float map[][];
 	
 	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side, Object lock, @Null Runnable postRun) {
 		this.shape = shape;
@@ -38,8 +37,6 @@ public class CubemapSideTask implements Runnable {
 		vec.y = MathUtils.round(vec.y);
 		vec.z = MathUtils.round(vec.z);
 		rite = new Vector3(vec);
-		
-		map = new float[Planet.RES+2][Planet.RES+2];
 	}
 
 	//     3
@@ -65,6 +62,8 @@ public class CubemapSideTask implements Runnable {
 		var dir = side.direction;
 		var color = new Color();
 		var matrial = new Material();
+		
+		var map = new float[Planet.RES+2][Planet.RES+2];
 		
 		synchronized (lock) {
 			for (int x = -1; x < Planet.RES+1; x++)

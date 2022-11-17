@@ -1,6 +1,7 @@
 package com.andedit.planet.gen.noise;
 
 import java.util.Random;
+import java.util.random.RandomGenerator;
 
 import com.andedit.planet.util.Noise;
 
@@ -9,7 +10,11 @@ public class NormalNoise extends Noise implements NoiseFilter {
 	public float amb = 1;
 	
 	public NormalNoise() {
-		super(new Random().nextInt());
+		this(new Random());
+	}
+	
+	public NormalNoise(RandomGenerator random) {
+		super(random.nextInt());
 	}
 	
 	@Override
