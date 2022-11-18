@@ -67,7 +67,7 @@ public class DesktopControl extends InputAdapter implements Control {
 
 	@Override
 	public Vector2 getLook() {
-		return look.set(delta.x * 0.3f, -delta.y * 0.3f);
+		return look.set(delta.x * 0.2f, -delta.y * 0.2f);
 	}
 
 	@Override

@@ -17,17 +17,18 @@ public class CubemapSideTask implements Runnable {
 	
 	private final ShapeGen shape;
 	private final MaterialGen material;
-	private final Pixmap colourMap, normalMap;
+	private final Pixmap colourMap, normalMap, dataMap;
 	private final CubemapSide side;
 	private final Vector3 rite;
 	private final Object lock;
 	private final Runnable postRun;
 	
-	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, CubemapSide side, Object lock, @Null Runnable postRun) {
+	public CubemapSideTask(ShapeGen shape, MaterialGen material, Pixmap colourMap, Pixmap normalMap, Pixmap dataMap, CubemapSide side, Object lock, @Null Runnable postRun) {
 		this.shape = shape;
 		this.material = material;
 		this.colourMap = colourMap;
 		this.normalMap = normalMap;
+		this.dataMap = dataMap;
 		this.side = side;
 		this.lock = lock;
 		this.postRun = postRun;
@@ -81,8 +82,10 @@ public class CubemapSideTask implements Runnable {
 				org.set(uPos).add(vPos).add(dir).nor();
 				pos.set(org).scl(map[x+1][y+1]);
 				material.genMaterial(pos, org, color, matrial);
-				colourMap.setColor(color.r, color.g, color.b, matrial.specular);
+				colourMap.setColor(color.r, color.g, color.b, 0);
 				colourMap.drawPixel(x, y);
+				dataMap.setColor(matrial.specular, matrial.shininess, matrial.luminance, 0);
+				dataMap.drawPixel(x, y);
 				
 				calcPosU(uPos, x);
 				calcPosV(vPos, y-1);
@@ -111,7 +114,7 @@ public class CubemapSideTask implements Runnable {
 				// Add both normals together then normalize the vector.
 				pos.set(nor1).add(nor2).nor();
 				
-				normalMap.setColor((pos.x*0.5f)+0.5f, (pos.y*0.5f)+0.5f, (pos.z*0.5f)+0.5f, matrial.shininess);
+				normalMap.setColor((pos.x*0.5f)+0.5f, (pos.y*0.5f)+0.5f, (pos.z*0.5f)+0.5f, 0);
 				normalMap.drawPixel(x, y);
 			}
 		}

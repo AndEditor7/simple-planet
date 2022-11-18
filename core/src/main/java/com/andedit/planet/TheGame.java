@@ -4,6 +4,7 @@ import static com.andedit.planet.Main.main;
 
 import com.andedit.planet.gen.MarsGen;
 import com.andedit.planet.gen.MercuryGen;
+import com.andedit.planet.gen.VolcanicPlanetGen;
 import com.andedit.planet.input.control.Control;
 import com.andedit.planet.input.control.DesktopControl;
 import com.andedit.planet.trans.RotationTrans;
@@ -82,7 +83,7 @@ public class TheGame extends ScreenAdapter {
 	}
 	
 	private void refreah() {
-		var gen = new MercuryGen();
+		var gen = new VolcanicPlanetGen();
 		planet.setShapeGen(gen);
 		planet.setMaterialGen(gen);
 		//planet.setAtmosphere(gen);

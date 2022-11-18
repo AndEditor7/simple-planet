@@ -38,16 +38,18 @@ import com.badlogic.gdx.utils.Null;
 
 public class Planet implements Disposable, SpaceObj {
 	
-	public static final int QUALITY = 0;
+	public static final int QUALITY = 1;
 	public static final int RES = 512<<QUALITY; // 512
 	
 	private static final TexBinder COLOR_BIND = new TexBinder();
 	private static final TexBinder NORMAL_BIND = new TexBinder();
+	private static final TexBinder DATA_BIND = new TexBinder();
 	
 	public final Vector3 lightDir = new Vector3(-0.6f, 0.2f, 0.25f).nor();
 	
 	private final Cubemap colorMap;
 	private final Cubemap normalMap;
+	private final Cubemap dataMap;
 	private final ArrayList<Pixmap> pixmaps;
 	private final Object[] locks;
 	private final int vertBuf;
@@ -69,7 +71,6 @@ public class Planet implements Disposable, SpaceObj {
 	
 	public Planet() {
 		buffer = BufferUtils.newFloatBuffer(IcoSphere.SIZE * 3);
-		System.out.println("floats: " + buffer.capacity());
 		
 		locks = new Object[6];
 		for (int i = 0; i < locks.length; i++) {
@@ -79,15 +80,20 @@ public class Planet implements Disposable, SpaceObj {
 		pixmaps = new ArrayList<>(12);
 		vertBuf = gl.glGenBuffer();
 		
-		colorMap  = newCubemap(Format.RGBA8888);
+		colorMap  = newCubemap(Format.RGB888);
 		COLOR_BIND.bind(colorMap);
 		colorMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
-		//colorMap.unsafeSetAnisotropicFilter(8);
+		colorMap.unsafeSetAnisotropicFilter(16, true);
 		
-		normalMap = newCubemap(Format.RGBA8888);
+		normalMap = newCubemap(Format.RGB888);
 		NORMAL_BIND.bind(normalMap);
 		normalMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
-		//normalMap.unsafeSetAnisotropicFilter(8);
+		normalMap.unsafeSetAnisotropicFilter(16, true);
+		
+		dataMap = newCubemap(Format.RGB888);
+		DATA_BIND.bind(normalMap);
+		dataMap.unsafeSetFilter(TextureFilter.Linear, TextureFilter.Linear);
+		dataMap.unsafeSetAnisotropicFilter(16, true);
 		
 		TexBinder.deactive();
 		
@@ -140,10 +146,12 @@ public class Planet implements Disposable, SpaceObj {
 		for (var side : CubemapSide.values()) {
 			var colourData = Util.getTexData(colorMap, side);
 			var normalData = Util.getTexData(normalMap, side);
+			var dataData = Util.getTexData(dataMap, side);
 			var colourPix = Util.getPixmap(colourData);
 			var normalPix = Util.getPixmap(normalData);
+			var dataPix = Util.getPixmap(dataData);
 			
-			submit(new CubemapSideTask(shape, material, colourPix, normalPix, side, locks[side.index], () -> {
+			submit(new CubemapSideTask(shape, material, colourPix, normalPix, dataPix, side, locks[side.index], () -> {
 				synchronized (locks[side.index]) {
 					if (isDisposed) return;
 					COLOR_BIND.bind(colorMap);
@@ -151,6 +159,9 @@ public class Planet implements Disposable, SpaceObj {
 					
 					NORMAL_BIND.bind(normalMap);
 					normalData.consumeCustomData(side.glEnum);
+					
+					DATA_BIND.bind(dataMap);
+					dataData.consumeCustomData(side.glEnum);
 					
 					TexBinder.deactive();
 				}
@@ -198,6 +209,7 @@ public class Planet implements Disposable, SpaceObj {
 		shader.bind();
 		COLOR_BIND.bind(colorMap);
 		NORMAL_BIND.bind(normalMap);
+		DATA_BIND.bind(dataMap);
 		shader.setUniformMatrix("u_projTrans", camera.combined);
 		shader.setUniformMatrix("u_posTrans", posMat);
 		shader.setUniformMatrix("u_normTrans", norMat);
@@ -205,6 +217,7 @@ public class Planet implements Disposable, SpaceObj {
 		shader.setUniformf("u_lightDir", lightDir);
 		shader.setUniformi("u_colorMap", COLOR_BIND.unit);
 		shader.setUniformi("u_normalMap", NORMAL_BIND.unit);
+		shader.setUniformi("u_dataMap", DATA_BIND.unit);
 		shader.setUniformf("u_specularScl", props.getSpecularMax());
 		shader.setUniformf("u_shininessScl", props.getShininessMax());
 		shader.setUniformf("u_gamma", props.getGamma());
@@ -233,6 +246,7 @@ public class Planet implements Disposable, SpaceObj {
 		gl.glDeleteBuffer(vertBuf);
 		colorMap.dispose();
 		normalMap.dispose();
+		dataMap.dispose();
 		
 		if (!futures.isEmpty()) {
 			futures.forEach(f->{
